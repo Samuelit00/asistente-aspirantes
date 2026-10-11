@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from app.telegram import send_message, set_webhook
 # Creación de la aplicación FastAPI
 app = FastAPI()
-
+set_webhook()
 @app.get("/")
 def raiz_royecto():
     return { "mensaje": "Funcionamiento correcto de la aplicación FastAPI" }
@@ -10,12 +11,14 @@ def raiz_royecto():
 
 @app.post("/webhook")
 def recibir_update(payload: dict):
+    # Recibimiento de todos los parametros del mensaje enviado por el usuario
     id_update = payload.get("update_id")
     id_message = payload.get("message", {}).get("message_id")
+    id_chat = payload.get("message",{}).get("chat",{}).get("id")
     text_message = payload.get("message", {}).get("text")
-    print(f"Update ID: {id_update}, Message ID: {id_message}, Text: {text_message}")
-    return {
-        "update_id": id_update,
-        "message_id": id_message,
-        "text": text_message
-    }
+    #Confirmación de recibido de mensaje y respuesta del mismo con POST a telgram
+    if id_chat is not None and text_message is not None:
+        send_message(id_chat, text_message)
+    elif id_chat is not None:
+        send_message(id_chat,"En este momento solo se aceptan mensajes de texto")
+    return {"ok": True}
